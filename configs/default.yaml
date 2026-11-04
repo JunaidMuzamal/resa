@@ -1,0 +1,147 @@
+# ReSA master configuration. Every script reads this file; override any key on the
+# command line with  --set key.subkey=value  (YAML-parsed), e.g. --set student.epochs=3
+
+seed: 42
+techs: [ansible, chef, puppet]
+
+paths:
+  external: external            # pinned clones of IntelliSA hub + CLI
+  raw: data/raw                 # GLITCH replication package (tar) + extracted RESULTS
+  processed: data/processed     # oracle/corpus indexes, candidate pools, splits
+  labels: data/labels           # teacher-committee label caches
+  models: models                # fine-tuned students
+  runs: runs                    # detections/rankings of each experiment run
+  results: results              # final tables and figures
+
+sources:
+  intellisa_hub:
+    url: https://github.com/ColeMei/intellisa.git
+    commit: 457eb3fd362e15555d3d93916e5c2c35fb32610d
+  intellisa_cli:
+    url: https://github.com/ColeMei/intellisa-cli.git
+    commit: 2934e8d8b95ac8c2b82ed2fdb6c595630cb3c89b
+  glitch_package:
+    figshare_article: 19726603
+    figshare_version: 2
+    filename: glitch-latest.tar
+    sha1: 3d97ad9c3e39feb42a0ba065049aba907002b185
+    md5: d9de60550dc558ad227ab14ceef64654
+
+# ---------------------------------------------------------------- data pools
+pools:
+  # Verifier pool: GLITCH warnings sampled from the 196k-script corpus (all 9 smells)
+  verifier:
+    per_tech_smell_cap: 400       # max warnings sampled per (tech, smell); all if fewer exist
+    max_file_lines: 400           # skip very long scripts (context + tractability)
+    files_per_tech_if_run: 4000   # only when GLITCH must be run ourselves (no package CSV)
+    include_intellisa_items: true # also label IntelliSA's released train/val items (RQ3 agreement)
+  # Recovery pool: relaxed-pattern candidates on lines GLITCH did NOT flag
+  recovery:
+    per_tech_smell_cap: 400
+    max_file_lines: 400
+    files_per_tech: 4000          # corpus scripts scanned for candidates per technology
+  split:
+    train: 0.85
+    val: 0.15
+  max_corpus_files_per_tech: null # null = whole corpus; set an int for a quick run
+
+# ---------------------------------------------------------------- context
+context:
+  window: 5                 # +/- lines around the target line (0 = line only, as IntelliSA)
+  mode: lines               # lines | block (block = enclosing resource/task/indent block)
+  max_chars: 1800
+  mark_target: true         # prefix target line with ">>"
+
+# ---------------------------------------------------------------- teachers
+teachers:
+  backend: vllm             # vllm | openai_compat | hf | rule_mock (rule_mock = tests only)
+  # OpenAI-compatible server (Ollama, vLLM server, LM Studio, TGI, hosted open-weight API)
+  openai_compat:
+    base_url: http://localhost:11434/v1
+    api_key_env: TEACHER_API_KEY
+    timeout: 120
+    max_retries: 5
+    concurrency: 8
+  vllm:
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.90
+    max_model_len: 4096
+    quantization: null      # e.g. awq for the 14B model on a 24 GB GPU
+  models:                   # the committee (open-weight only)
+    - name: qwen2.5-coder-14b
+      hf_id: Qwen/Qwen2.5-Coder-14B-Instruct
+      served_name: qwen2.5-coder:14b
+    - name: llama-3.1-8b
+      hf_id: meta-llama/Llama-3.1-8B-Instruct
+      served_name: llama3.1:8b
+    - name: deepseek-coder-v2-lite
+      hf_id: deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct
+      served_name: deepseek-coder-v2:16b
+  temperature: 0.0
+  max_new_tokens: 4
+  aggregation: soft         # soft (mean P(YES)) | majority
+  decision_threshold: 0.5
+
+# ---------------------------------------------------------------- students
+student:
+  model_name: Salesforce/codet5p-220m   # also: microsoft/codebert-base, microsoft/unixcoder-base
+  max_length: 512
+  epochs: 6
+  lr: 4.0e-5
+  batch_size: 8
+  grad_accum: 1
+  weight_decay: 0.01
+  warmup_steps: 500
+  scheduler: cosine
+  fp16: auto                # auto = use bf16/fp16 when a GPU is present
+  early_stopping_patience: 2
+  rebalance: smell_weighted # none | class_weighted | smell_weighted (upweights rare smells)
+  rare_smells: ["No integrity check", "Use of weak cryptography algorithms"]
+  rare_oversample: 3
+  seeds: [42, 43, 44, 45, 46]
+  threshold_metric: f1      # threshold chosen on validation, frozen before test
+
+# ---------------------------------------------------------------- pipeline
+pipeline:
+  verify_smells: all        # all | intellisa4 (G3 ablation)
+  use_recovery: true
+  recovery_requires_verifier: true
+  thresholds_file: null     # filled by training (per stage, per tech)
+
+# ---------------------------------------------------------------- evaluation
+evaluation:
+  bootstrap_iters: 2000
+  ci: 0.95
+  f1_n_percent: [0.5, 1, 2, 5, 10]
+  effort_recall_targets: [60, 80, 90]
+
+# ---------------------------------------------------------------- experiments
+experiments:
+  ablation_seeds: [42, 43, 44]
+  context_windows: [0, 3, 5, 10]       # plus mode=block
+  backbones:
+    - Salesforce/codet5p-220m
+    - Salesforce/codet5p-770m
+    - microsoft/codebert-base
+    - microsoft/unixcoder-base
+  rebalance_modes: [none, class_weighted, smell_weighted]
+  recovery_threshold_sweep: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95]
+
+# ---------------------------------------------------------------- scaling (RQ4)
+scaling:
+  cpu_workers: [1, 2, 4, 8, 16]
+  gpu_workers: [1]
+  sample_files: 20000       # scripts drawn from the corpus for timing runs
+  repeats: 3
+  batch_size: 64
+
+# ---------------------------------------------------------------- cost (RQ5)
+cost:
+  # USD per 1M tokens; edit to the prices on the date you run the experiment
+  api_prices:
+    claude-sonnet-4: {input: 3.00, output: 15.00}
+    gpt-5: {input: 1.25, output: 10.00}
+    grok-4-fast: {input: 0.20, output: 0.50}
+  gpu_hour_usd: 1.10        # on-demand price of the GPU type you used
+  cpu_core_hour_usd: 0.04
+  chars_per_token: 3.6

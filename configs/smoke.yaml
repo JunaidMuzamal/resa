@@ -1,0 +1,53 @@
+# Fast end-to-end smoke test (CPU, minutes). NOT for real results:
+#   * teachers use the deterministic rule_mock backend instead of LLMs
+#   * the student is a tiny randomly initialised model built by scripts/make_tiny_model.py
+#   * the corpus is a small stand-in built by scripts/make_smoke_corpus.py
+# Usage: bash scripts/smoke_test.sh
+
+paths:
+  raw: smoke/data/raw
+  processed: smoke/data/processed
+  labels: smoke/data/labels
+  models: smoke/models
+  runs: smoke/runs
+  results: smoke/results
+
+pools:
+  verifier:
+    per_tech_smell_cap: 40
+    files_per_tech_if_run: 150
+  recovery:
+    per_tech_smell_cap: 40
+    files_per_tech: 150
+
+teachers:
+  backend: rule_mock
+  models:
+    - {name: mock-a, hf_id: none, mock_bias: 0.0}
+    - {name: mock-b, hf_id: none, mock_bias: 0.05}
+    - {name: mock-c, hf_id: none, mock_bias: -0.05}
+
+student:
+  model_name: smoke/tiny-model
+  max_length: 128
+  epochs: 1
+  batch_size: 16
+  warmup_steps: 5
+  seeds: [42, 43]
+
+experiments:
+  ablation_seeds: [42]
+  context_windows: [0, 5]
+  backbones: [smoke/tiny-model]
+  rebalance_modes: [none, smell_weighted]
+  recovery_threshold_sweep: [0.3, 0.5, 0.7]
+
+evaluation:
+  bootstrap_iters: 50
+
+scaling:
+  cpu_workers: [1, 2]
+  gpu_workers: [1]
+  sample_files: 40
+  repeats: 1
+  batch_size: 32
