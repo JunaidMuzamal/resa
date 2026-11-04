@@ -3,11 +3,11 @@ __pycache__/
 .venv/
 .pytest_cache/
 # large files stay on the GPU PC (never committed)
-external/
-data/
-models/
-runs/
-smoke/
+/external/
+/data/
+/models/
+/runs/
+/smoke/
 *.tar
 *.part
 # results/ and logs/ ARE committed (small): scripts/gpu_run.sh pushes them back for review on the laptop
