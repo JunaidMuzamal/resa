@@ -108,3 +108,10 @@ def test_puppet_reconstruction_matches_intellisa_loc():
         assert text is not None, name
         total += sum(1 for line in text.splitlines() if line.strip())
     assert total == expected_nonblank_loc(CFG, "puppet") == 3964
+
+
+def test_windows_reserved_names():
+    from resa.data.fetch import _unwritable_on_windows as bad
+    assert bad("RESULTS/chef/repos/x/cookbooks/fac/recipes/prn.rb")
+    assert bad("RESULTS/a/NUL.txt") and bad("RESULTS/a/com1.rb") and bad("RESULTS/a/b./c.rb")
+    assert not bad("RESULTS/a/printer.rb") and not bad("RESULTS/a/console.pp")

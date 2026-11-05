@@ -159,6 +159,25 @@ def _safe_target(root: Path, member_name: str) -> Optional[Path]:
     return root / Path(*rel.parts)
 
 
+_WIN_RESERVED = {"CON", "PRN", "AUX", "NUL", *(f"COM{i}" for i in range(1, 10)), *(f"LPT{i}" for i in range(1, 10))}
+
+
+def _unwritable_on_windows(name: str) -> bool:
+    """True if a path cannot exist as a normal Windows file (reserved device names such as prn.rb, trailing dot/space)."""
+    for part in PurePosixPath(name).parts:
+        if part.split(".", 1)[0].strip().upper() in _WIN_RESERVED or part != part.rstrip(" ."):
+            return True
+    return False
+
+
+def _long_path(path: Path) -> Path:
+    """Windows: use the extended-length prefix so deep repo paths (>260 chars) can be written."""
+    if os.name != "nt":
+        return path
+    absolute = os.path.abspath(path)
+    return Path(absolute if absolute.startswith("\\\\?\\") else "\\\\?\\" + absolute)
+
+
 def _wanted(name: str, keep_all: bool) -> bool:
     if not name.startswith("RESULTS/"):
         return False
@@ -190,6 +209,7 @@ def extract_results_from_image(tar_path: Path, out_root: Path, keep_all: bool = 
     """Replay the image's layers and materialise ``/RESULTS`` under ``out_root`` (no Docker needed)."""
     ensure_dir(out_root)
     stats = {"layers": 0, "files": 0, "whiteouts": 0, "skipped": 0, "links": 0}
+    skipped_names: list = []
     with tarfile.open(tar_path, "r") as outer:
         layers = _layer_names(outer)
         LOG.info("Image has %d layers", len(layers))
@@ -225,12 +245,16 @@ def extract_results_from_image(tar_path: Path, out_root: Path, keep_all: bool = 
                     target = _safe_target(out_root, name)
                     if target is None:
                         continue
-                    ensure_dir(target.parent)
+                    if os.name == "nt" and _unwritable_on_windows(name):
+                        stats["skipped_windows_names"] = stats.get("skipped_windows_names", 0) + 1
+                        skipped_names.append(name)
+                        continue
+                    ensure_dir(_long_path(target.parent))
                     if member.isreg():
                         src = layer.extractfile(member)
                         if src is None:
                             continue
-                        with open(target, "wb") as handle:
+                        with open(_long_path(target), "wb") as handle:
                             shutil.copyfileobj(src, handle)
                         stats["files"] += 1
                     elif member.islnk():
@@ -245,6 +269,10 @@ def extract_results_from_image(tar_path: Path, out_root: Path, keep_all: bool = 
                             shutil.copyfile(resolved, target)
                             stats["links"] += 1
             LOG.info("layer %d/%d done (%d files so far)", stats["layers"], len(layers), stats["files"])
+    if skipped_names:
+        (out_root / "skipped_windows_names.txt").write_text("\n".join(skipped_names) + "\n", encoding="utf-8")
+        LOG.warning("Skipped %d files whose names are invalid on Windows (listed in %s)", len(skipped_names),
+                    out_root / "skipped_windows_names.txt")
     return stats
 
 
