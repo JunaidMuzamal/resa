@@ -1,0 +1,23 @@
+{
+  "device": {
+    "python": "3.12.10",
+    "cpu_count": 24,
+    "ram_gb": 34.0,
+    "torch": "2.5.1+cu121",
+    "cuda": true,
+    "gpus": [
+      "NVIDIA RTX A4000"
+    ]
+  },
+  "ruby": false,
+  "docker": false,
+  "intellisa_hub": false,
+  "intellisa_cli": false,
+  "glitch_corpus_extracted": false,
+  "oracle_manifest": "not prepared",
+  "vllm": false,
+  "pool_verify": 0,
+  "labels_verify": 0,
+  "pool_recover": 0,
+  "labels_recover": 0
+}

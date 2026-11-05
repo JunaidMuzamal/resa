@@ -1,0 +1,18 @@
+=== 2026-11-05T05:06:43-08:00  host=DESKTOP-2OA73LD  git=6c94ec3
+NVIDIA RTX A4000, 16376 MiB, 596.71
+Python 3.12.10
+cpu cores: 24
++ python -m resa.cli check
+device                   {'python': '3.12.10', 'cpu_count': 24, 'ram_gb': 34.0, 'torch': '2.5.1+cu121', 'cuda': True, 'gpus': ['NVIDIA RTX A4000']}
+ruby                     False
+docker                   False
+intellisa_hub            False
+intellisa_cli            False
+glitch_corpus_extracted  False
+oracle_manifest          not prepared
+vllm                     False
+pool_verify              0
+labels_verify            0
+pool_recover             0
+labels_recover           0
+=== exit code: 0
