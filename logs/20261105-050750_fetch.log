@@ -1,0 +1,50 @@
+=== 2026-11-05T05:07:51-08:00  host=DESKTOP-2OA73LD  git=97f6dd2
+NVIDIA RTX A4000, 16376 MiB, 596.71
+Python 3.12.10
+cpu cores: 24
++ python -m resa.cli fetch all
+2026-11-05 05:07:55,793 INFO resa.fetch: Cloned https://github.com/ColeMei/intellisa.git @ 457eb3fd36 -> D:\LAB\resa\external\intellisa-hub
+2026-11-05 05:07:58,095 INFO resa.fetch: Cloned https://github.com/ColeMei/intellisa-cli.git @ 2934e8d8b9 -> D:\LAB\resa\external\intellisa-cli
+2026-11-05 05:07:59,653 INFO resa.fetch: Downloading GLITCH replication package (glitch-latest.tar) from https://ndownloader.figshare.com/files/36939973
+2026-11-05 05:08:12,547 INFO resa.fetch: downloaded 75.5 / 1819.0 MB (4.2%)
+2026-11-05 05:08:22,763 INFO resa.fetch: downloaded 176.2 / 1819.0 MB (9.7%)
+2026-11-05 05:08:32,998 INFO resa.fetch: downloaded 281.0 / 1819.0 MB (15.4%)
+2026-11-05 05:08:43,023 INFO resa.fetch: downloaded 369.1 / 1819.0 MB (20.3%)
+2026-11-05 05:08:53,433 INFO resa.fetch: downloaded 499.1 / 1819.0 MB (27.4%)
+2026-11-05 05:09:03,627 INFO resa.fetch: downloaded 595.6 / 1819.0 MB (32.7%)
+2026-11-05 05:09:14,047 INFO resa.fetch: downloaded 675.3 / 1819.0 MB (37.1%)
+2026-11-05 05:09:24,913 INFO resa.fetch: downloaded 729.8 / 1819.0 MB (40.1%)
+2026-11-05 05:09:35,410 INFO resa.fetch: downloaded 780.1 / 1819.0 MB (42.9%)
+2026-11-05 05:09:45,835 INFO resa.fetch: downloaded 872.4 / 1819.0 MB (48.0%)
+2026-11-05 05:09:56,064 INFO resa.fetch: downloaded 964.7 / 1819.0 MB (53.0%)
+2026-11-05 05:10:06,278 INFO resa.fetch: downloaded 1082.1 / 1819.0 MB (59.5%)
+2026-11-05 05:10:16,704 INFO resa.fetch: downloaded 1182.8 / 1819.0 MB (65.0%)
+2026-11-05 05:10:26,971 INFO resa.fetch: downloaded 1275.1 / 1819.0 MB (70.1%)
+2026-11-05 05:10:37,244 INFO resa.fetch: downloaded 1367.3 / 1819.0 MB (75.2%)
+2026-11-05 05:10:47,693 INFO resa.fetch: downloaded 1497.4 / 1819.0 MB (82.3%)
+2026-11-05 05:10:57,749 INFO resa.fetch: downloaded 1585.4 / 1819.0 MB (87.2%)
+2026-11-05 05:11:07,969 INFO resa.fetch: downloaded 1715.5 / 1819.0 MB (94.3%)
+2026-11-05 05:11:18,220 INFO resa.fetch: downloaded 1803.6 / 1819.0 MB (99.2%)
+2026-11-05 05:11:19,963 INFO resa.fetch: Verifying SHA1 of D:\LAB\resa\data\raw\glitch-latest.tar ...
+2026-11-05 05:11:21,112 INFO resa.fetch: SHA1 OK (3d97ad9c3e39feb42a0ba065049aba907002b185)
+2026-11-05 05:11:21,119 INFO resa.fetch: Image has 14 layers
+2026-11-05 05:11:21,201 INFO resa.fetch: layer 1/14 done (0 files so far)
+2026-11-05 05:11:21,202 INFO resa.fetch: layer 2/14 done (0 files so far)
+2026-11-05 05:11:21,202 INFO resa.fetch: layer 3/14 done (0 files so far)
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "D:\LAB\resa\resa\cli.py", line 105, in <module>
+    main()
+  File "D:\LAB\resa\resa\cli.py", line 75, in main
+    m(rest)
+  File "D:\LAB\resa\resa\data\fetch.py", line 296, in main
+    extract(cfg, args.tar, args.use_docker, args.keep_all)
+  File "D:\LAB\resa\resa\data\fetch.py", line 274, in extract
+    stats = extract_with_docker(tar_path, out_root) if use_docker else extract_results_from_image(tar_path, out_root, keep_all)
+                                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\LAB\resa\resa\data\fetch.py", line 233, in extract_results_from_image
+    with open(target, "wb") as handle:
+         ^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'D:\\LAB\\resa\\data\\raw\\glitch_package\\RESULTS\\chef\\repos\\guymatz_chef\\cookbooks\\fac\\recipes\\prn.rb'
+=== exit code: 1
