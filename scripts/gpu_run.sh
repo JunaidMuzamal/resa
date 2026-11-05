@@ -23,7 +23,10 @@ mkdir -p logs
 STAMP=$(date +%Y%m%d-%H%M%S)
 LOG="logs/${STAMP}_${STEP}.log"
 
-if [[ -d .venv ]]; then source .venv/bin/activate; fi
+# Windows (Git Bash) venvs use Scripts/, Linux uses bin/
+activate_venv() { if [[ -f .venv/Scripts/activate ]]; then source .venv/Scripts/activate; elif [[ -f .venv/bin/activate ]]; then source .venv/bin/activate; fi; }
+case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) IS_WIN=1; PYBOOT=python ;; *) IS_WIN=0; PYBOOT=python3 ;; esac
+activate_venv
 
 run() {  # run a command, tee to log, return its exit code
   echo "+ $*" | tee -a "$LOG"
@@ -43,15 +46,15 @@ env_report() {
 step() {
   case "$1" in
     setup)
-      [[ -d .venv ]] || python3 -m venv .venv
-      source .venv/bin/activate
+      [[ -d .venv ]] || $PYBOOT -m venv .venv
+      activate_venv
       run python -m pip install -U pip "setuptools<81" wheel || return 1
       if command -v nvidia-smi >/dev/null && ! python -c "import torch,sys;sys.exit(0 if torch.cuda.is_available() else 1)" 2>/dev/null; then
         run python -m pip install torch --index-url https://download.pytorch.org/whl/cu121 || return 1
       fi
       run python -m pip install -r requirements.txt || return 1
       run python -m pip install -e . || return 1
-      run python -m pip install vllm || echo "vllm install failed; use --set teachers.backend=hf or openai_compat" | tee -a "$LOG"
+      if [[ "$IS_WIN" == "1" ]]; then echo "native Windows: vLLM unsupported; label steps need --set teachers.backend=hf (or openai_compat with Ollama)" | tee -a "$LOG"; else run python -m pip install vllm || echo "vllm install failed; use --set teachers.backend=hf or openai_compat" | tee -a "$LOG"; fi
       run python -c "import torch;print('cuda available:',torch.cuda.is_available())"
       run python -m pytest -q tests ;;
     check)         run python -m resa.cli check "${EXTRA[@]}" ;;
